@@ -4,20 +4,26 @@
    [openlibrary.util :as util]
    [openlibrary.search :as s]))
 
-(defn -main [& args]
-  (->
+(def shutdown-hooks (atom {}))
+
+(defn register-shutdown-hook [hook-key hook-fn]
+  (swap! shutdown-hooks assoc hook-key hook-fn))
+
+(defn setup-hooks []
+  (.addShutdownHook
    (Runtime/getRuntime)
-   (.addShutdownHook
-    (Thread. 
-     (fn [& _]
-       (util/log "Writing cache to disk...")
-       (spit "cache.edn" @cache/store)
-       (util/log "Exitting.")))))
+   (Thread.
+    (fn []
+      (doseq [[hook-key hook-fn] @shutdown-hooks]
+        (util/log "Running shutdown hook:" hook-key)
+        (hook-fn))
+      (util/log "Exitting.")))))
+
+(defn -main [& args]
+  (util/log "Starting...")
+  (register-shutdown-hook :cache-persist cache/shutdown-hook)
+  (setup-hooks)
   
-  (util/log "Starting.")
+  (cache/initialize)
   
-  (let [cache (clojure.edn/read-string (slurp "cache.edn"))]
-    (reset! cache/store (or cache {})))
-  
-  (println (s/search :isbn (first args)))
-)
+  (println (s/search :isbn (first args))))
