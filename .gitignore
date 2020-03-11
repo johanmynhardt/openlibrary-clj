@@ -1,1 +1,5 @@
 .cpcache/
+.nrepl-port
+cache.edn
+exit.dat
+log.dat
