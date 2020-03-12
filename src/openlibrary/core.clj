@@ -26,4 +26,12 @@
   
   (cache/initialize)
   
-  (println (s/search :isbn (first args))))
+  (let [searches
+        (->>
+         args
+         (map (fn [isbn] [isbn (s/search :isbn isbn)]))
+         (into {}))]
+    (println
+     "Results" \newline
+     "-----------" \newline 
+     (with-out-str (clojure.pprint/pprint searches)))))
